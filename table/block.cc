@@ -17,11 +17,13 @@
 
 namespace leveldb {
 
+// 获取重启点的个数(block的最后4个字节)
 inline uint32_t Block::NumRestarts() const {
   assert(size_ >= sizeof(uint32_t));
   return DecodeFixed32(data_ + size_ - sizeof(uint32_t));
 }
 
+// 初始化一个block，比如：重启点数组的位置，buf,size等
 Block::Block(const BlockContents& contents)
     : data_(contents.data.data()),
       size_(contents.data.size()),
@@ -52,6 +54,7 @@ Block::~Block() {
 //
 // If any errors are detected, returns nullptr.  Otherwise, returns a
 // pointer to the key delta (just past the three decoded values).
+// 解析shared_bytes, unshared_bytes, value_length
 static inline const char* DecodeEntry(const char* p, const char* limit,
                                       uint32_t* shared, uint32_t* non_shared,
                                       uint32_t* value_length) {
@@ -74,6 +77,7 @@ static inline const char* DecodeEntry(const char* p, const char* limit,
   return p;
 }
 
+// 迭代器，负责遍历一个block的所有k-v对
 class Block::Iter : public Iterator {
  private:
   const Comparator* const comparator_;
@@ -82,7 +86,7 @@ class Block::Iter : public Iterator {
   uint32_t const num_restarts_;  // Number of uint32_t entries in restart array
 
   // current_ is offset in data_ of current entry.  >= restarts_ if !Valid
-  uint32_t current_;
+  uint32_t current_; // 当前解析entry的偏移
   uint32_t restart_index_;  // Index of restart block in which current_ falls
   std::string key_;
   Slice value_;
@@ -97,11 +101,13 @@ class Block::Iter : public Iterator {
     return (value_.data() + value_.size()) - data_;
   }
 
+  // 获取重启点index的偏移
   uint32_t GetRestartPoint(uint32_t index) {
     assert(index < num_restarts_);
     return DecodeFixed32(data_ + restarts_ + index * sizeof(uint32_t));
   }
 
+  // 偏移到重启点index的第一个位置
   void SeekToRestartPoint(uint32_t index) {
     key_.clear();
     restart_index_ = index;
@@ -226,11 +232,13 @@ class Block::Iter : public Iterator {
     }
   }
 
+  // Seek到第一个重启点，并解析出第一个key
   void SeekToFirst() override {
     SeekToRestartPoint(0);
     ParseNextKey();
   }
 
+  // Seek到最后一个重启点，然后一直parseNext，直到到达最后一个entry
   void SeekToLast() override {
     SeekToRestartPoint(num_restarts_ - 1);
     while (ParseNextKey() && NextEntryOffset() < restarts_) {
@@ -247,6 +255,7 @@ class Block::Iter : public Iterator {
     value_.clear();
   }
 
+  // 将current移动，并解析此entry
   bool ParseNextKey() {
     current_ = NextEntryOffset();
     const char* p = data_ + current_;

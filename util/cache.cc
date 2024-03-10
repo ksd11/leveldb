@@ -119,7 +119,7 @@ class HandleTable {
     }
     return ptr;
   }
-
+  // 扩展哈希表的大小
   void Resize() {
     uint32_t new_length = 4;
     while (new_length < elems_) {
@@ -186,11 +186,11 @@ class LRUCache {
   // Dummy head of LRU list.
   // lru.prev is newest entry, lru.next is oldest entry.
   // Entries have refs==1 and in_cache==true.
-  LRUHandle lru_ GUARDED_BY(mutex_);
+  LRUHandle lru_ GUARDED_BY(mutex_); // 可以被移除的链表头
 
   // Dummy head of in-use list.
   // Entries are in use by clients, and have refs >= 2 and in_cache==true.
-  LRUHandle in_use_ GUARDED_BY(mutex_);
+  LRUHandle in_use_ GUARDED_BY(mutex_); // 所有链表的头
 
   HandleTable table_ GUARDED_BY(mutex_);
 };
@@ -236,12 +236,12 @@ void LRUCache::Unref(LRUHandle* e) {
     LRU_Append(&lru_, e);
   }
 }
-
+// 从链表中删除e
 void LRUCache::LRU_Remove(LRUHandle* e) {
   e->next->prev = e->prev;
   e->prev->next = e->next;
 }
-
+// e拆入到list后
 void LRUCache::LRU_Append(LRUHandle* list, LRUHandle* e) {
   // Make "e" newest entry by inserting just before *list
   e->next = list;
@@ -254,7 +254,7 @@ Cache::Handle* LRUCache::Lookup(const Slice& key, uint32_t hash) {
   MutexLock l(&mutex_);
   LRUHandle* e = table_.Lookup(key, hash);
   if (e != nullptr) {
-    Ref(e);
+    Ref(e); // 使用之后引用次数加1
   }
   return reinterpret_cast<Cache::Handle*>(e);
 }
@@ -338,17 +338,17 @@ static const int kNumShards = 1 << kNumShardBits;
 
 class ShardedLRUCache : public Cache {
  private:
-  LRUCache shard_[kNumShards];
+  LRUCache shard_[kNumShards]; // 默认有16片
   port::Mutex id_mutex_;
   uint64_t last_id_;
-
+  // 获取slice的哈希值
   static inline uint32_t HashSlice(const Slice& s) {
     return Hash(s.data(), s.size(), 0);
   }
-
+  // 选取大的最高4个bit作为片索引，总共16个
   static uint32_t Shard(uint32_t hash) { return hash >> (32 - kNumShardBits); }
 
- public:
+ public: // 构造函数，为每个shared分配空间
   explicit ShardedLRUCache(size_t capacity) : last_id_(0) {
     const size_t per_shard = (capacity + (kNumShards - 1)) / kNumShards;
     for (int s = 0; s < kNumShards; s++) {

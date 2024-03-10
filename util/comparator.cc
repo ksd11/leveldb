@@ -28,6 +28,8 @@ class BytewiseComparatorImpl : public Comparator {
     return a.compare(b);
   }
 
+  // 当start < limit时， 将start字符串变短
+  // 例如 start=aaabcas  limit=aaadaa -> start = aaac
   void FindShortestSeparator(std::string* start,
                              const Slice& limit) const override {
     // Find length of common prefix
@@ -51,6 +53,7 @@ class BytewiseComparatorImpl : public Comparator {
     }
   }
 
+  // fffffa -> fffffb
   void FindShortSuccessor(std::string* key) const override {
     // Find first character that can be incremented
     size_t n = key->size();

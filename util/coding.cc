@@ -18,6 +18,7 @@ void PutFixed64(std::string* dst, uint64_t value) {
   dst->append(buf, sizeof(buf));
 }
 
+// 32位数用边长编码表示
 char* EncodeVarint32(char* dst, uint32_t v) {
   // Operate on characters as unsigneds
   uint8_t* ptr = reinterpret_cast<uint8_t*>(dst);
@@ -68,7 +69,7 @@ void PutVarint64(std::string* dst, uint64_t v) {
   char* ptr = EncodeVarint64(buf, v);
   dst->append(buf, ptr - buf);
 }
-
+// put 变长的slice
 void PutLengthPrefixedSlice(std::string* dst, const Slice& value) {
   PutVarint32(dst, value.size());
   dst->append(value.data(), value.size());
@@ -83,6 +84,7 @@ int VarintLength(uint64_t v) {
   return len;
 }
 
+// 获取 p ~ limit 指向的变长编码的32位数值
 const char* GetVarint32PtrFallback(const char* p, const char* limit,
                                    uint32_t* value) {
   uint32_t result = 0;
@@ -101,10 +103,11 @@ const char* GetVarint32PtrFallback(const char* p, const char* limit,
   return nullptr;
 }
 
+// 返回值代表input还可以消耗
 bool GetVarint32(Slice* input, uint32_t* value) {
   const char* p = input->data();
   const char* limit = p + input->size();
-  const char* q = GetVarint32Ptr(p, limit, value);
+  const char* q = GetVarint32Ptr(p, limit, value); // q返回的是消耗input得到一个value后指向的位置
   if (q == nullptr) {
     return false;
   } else {

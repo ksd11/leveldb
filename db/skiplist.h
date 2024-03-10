@@ -153,7 +153,7 @@ struct SkipList<Key, Comparator>::Node {
     // Use an 'acquire load' so that we observe a fully initialized
     // version of the returned Node.
     return next_[n].load(std::memory_order_acquire);
-  }
+  } // 设置第n层的指向
   void SetNext(int n, Node* x) {
     assert(n >= 0);
     // Use a 'release store' so that anybody who reads through this
@@ -176,6 +176,7 @@ struct SkipList<Key, Comparator>::Node {
   std::atomic<Node*> next_[1];
 };
 
+// 添加一个新节点
 template <typename Key, class Comparator>
 typename SkipList<Key, Comparator>::Node* SkipList<Key, Comparator>::NewNode(
     const Key& key, int height) {
@@ -236,6 +237,7 @@ inline void SkipList<Key, Comparator>::Iterator::SeekToLast() {
   }
 }
 
+// 随机获取高度 1 - kMaxHeight
 template <typename Key, class Comparator>
 int SkipList<Key, Comparator>::RandomHeight() {
   // Increase height with probability 1 in kBranching
@@ -249,12 +251,13 @@ int SkipList<Key, Comparator>::RandomHeight() {
   return height;
 }
 
+// 当前的key是否要往后走
 template <typename Key, class Comparator>
 bool SkipList<Key, Comparator>::KeyIsAfterNode(const Key& key, Node* n) const {
   // null n is considered infinite
   return (n != nullptr) && (compare_(n->key, key) < 0);
 }
-
+// 查找第一个大于等于key的node,不存在则返回Nullptr. prev保存了每一层的指针
 template <typename Key, class Comparator>
 typename SkipList<Key, Comparator>::Node*
 SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key,
@@ -318,7 +321,7 @@ typename SkipList<Key, Comparator>::Node* SkipList<Key, Comparator>::FindLast()
     }
   }
 }
-
+// 构造函数
 template <typename Key, class Comparator>
 SkipList<Key, Comparator>::SkipList(Comparator cmp, Arena* arena)
     : compare_(cmp),
@@ -330,7 +333,7 @@ SkipList<Key, Comparator>::SkipList(Comparator cmp, Arena* arena)
     head_->SetNext(i, nullptr);
   }
 }
-
+// 插一个Key
 template <typename Key, class Comparator>
 void SkipList<Key, Comparator>::Insert(const Key& key) {
   // TODO(opt): We can use a barrier-free variant of FindGreaterOrEqual()
@@ -364,7 +367,7 @@ void SkipList<Key, Comparator>::Insert(const Key& key) {
     prev[i]->SetNext(i, x);
   }
 }
-
+// 返回是否包含一个key
 template <typename Key, class Comparator>
 bool SkipList<Key, Comparator>::Contains(const Key& key) const {
   Node* x = FindGreaterOrEqual(key, nullptr);

@@ -34,6 +34,8 @@ bool Reader::SkipToInitialBlock() {
   const size_t offset_in_block = initial_offset_ % kBlockSize;
   uint64_t block_start_location = initial_offset_ - offset_in_block;
 
+
+  // 这里是一个错误吗？应该是>=kBlockSize
   // Don't search a block if we'd be in the trailer
   if (offset_in_block > kBlockSize - 6) {
     block_start_location += kBlockSize;
@@ -53,6 +55,7 @@ bool Reader::SkipToInitialBlock() {
   return true;
 }
 
+// scratch是实际存放字符串的地方
 bool Reader::ReadRecord(Slice* record, std::string* scratch) {
   if (last_record_offset_ < initial_offset_) {
     if (!SkipToInitialBlock()) {
@@ -62,7 +65,11 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
 
   scratch->clear();
   record->clear();
+
+  // 当前是否在fragment内，也就是遇到了FIRST类型的record
   bool in_fragmented_record = false;
+  
+  // 我们正在读取的逻辑record的偏移
   // Record offset of the logical record that we're reading
   // 0 is a dummy value to make compilers happy
   uint64_t prospective_record_offset = 0;
@@ -186,6 +193,7 @@ void Reader::ReportDrop(uint64_t bytes, const Status& reason) {
   }
 }
 
+// 读取一个record
 unsigned int Reader::ReadPhysicalRecord(Slice* result) {
   while (true) {
     if (buffer_.size() < kHeaderSize) {
@@ -200,7 +208,7 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
           eof_ = true;
           return kEof;
         } else if (buffer_.size() < kBlockSize) {
-          eof_ = true;
+          eof_ = true; // 读取的buffer_大小小于一个block，说明到达末尾
         }
         continue;
       } else {

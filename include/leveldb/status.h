@@ -27,6 +27,7 @@ class LEVELDB_EXPORT Status {
   Status() noexcept : state_(nullptr) {}
   ~Status() { delete[] state_; }
 
+  // &与&&区别在于&&传递的是右值（通过std::move），后者在传递过后就无效了
   Status(const Status& rhs);
   Status& operator=(const Status& rhs);
 
@@ -89,7 +90,10 @@ class LEVELDB_EXPORT Status {
     return (state_ == nullptr) ? kOk : static_cast<Code>(state_[4]);
   }
 
+  // 私有方法，用户只能通过静态成员函数调用，如Stats::OK
   Status(Code code, const Slice& msg, const Slice& msg2);
+
+  // 深拷贝状态s
   static const char* CopyState(const char* s);
 
   // OK status has a null state_.  Otherwise, state_ is a new[] array

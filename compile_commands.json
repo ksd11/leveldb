@@ -1,0 +1,60 @@
+[
+    {
+        "arguments": [
+            "/usr/bin/c++",
+            "-c",
+            "-DLEVELDB_PLATFORM_POSIX=1",
+            "-I/home/liuqiang/self_learn/leveldb/build/include",
+            "-I/home/liuqiang/self_learn/leveldb/.",
+            "-I/home/liuqiang/self_learn/leveldb/include",
+            "-isystem",
+            "/home/liuqiang/self_learn/leveldb/third_party/googletest/googlemock/include",
+            "-isystem",
+            "/home/liuqiang/self_learn/leveldb/third_party/googletest/googlemock",
+            "-isystem",
+            "/home/liuqiang/self_learn/leveldb/third_party/googletest/googletest/include",
+            "-isystem",
+            "/home/liuqiang/self_learn/leveldb/third_party/googletest/googletest",
+            "-fno-exceptions",
+            "-fno-rtti",
+            "-O3",
+            "-DNDEBUG",
+            "-pthread",
+            "-std=c++11",
+            "-o",
+            "CMakeFiles/main.dir/app/main.cc.o",
+            "../app/main.cc"
+        ],
+        "directory": "/home/liuqiang/self_learn/leveldb/build",
+        "file": "../app/main.cc"
+    },
+    {
+        "arguments": [
+            "/usr/bin/c++",
+            "-c",
+            "-DLEVELDB_PLATFORM_POSIX=1",
+            "-I/home/liuqiang/self_learn/leveldb/build/include",
+            "-I/home/liuqiang/self_learn/leveldb/.",
+            "-I/home/liuqiang/self_learn/leveldb/include",
+            "-isystem",
+            "/home/liuqiang/self_learn/leveldb/third_party/googletest/googlemock/include",
+            "-isystem",
+            "/home/liuqiang/self_learn/leveldb/third_party/googletest/googlemock",
+            "-isystem",
+            "/home/liuqiang/self_learn/leveldb/third_party/googletest/googletest/include",
+            "-isystem",
+            "/home/liuqiang/self_learn/leveldb/third_party/googletest/googletest",
+            "-fno-exceptions",
+            "-fno-rtti",
+            "-O3",
+            "-DNDEBUG",
+            "-pthread",
+            "-std=c++11",
+            "-o",
+            "CMakeFiles/main.dir/util/testutil.cc.o",
+            "../util/testutil.cc"
+        ],
+        "directory": "/home/liuqiang/self_learn/leveldb/build",
+        "file": "../util/testutil.cc"
+    }
+]

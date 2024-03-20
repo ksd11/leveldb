@@ -166,12 +166,15 @@ Iterator* Table::BlockReader(void* arg, const ReadOptions& options,
   if (s.ok()) {
     BlockContents contents;
     if (block_cache != nullptr) {
+
+      // key 为 table cache id + offset
       char cache_key_buffer[16];
       EncodeFixed64(cache_key_buffer, table->rep_->cache_id);
       EncodeFixed64(cache_key_buffer + 8, handle.offset());
       Slice key(cache_key_buffer, sizeof(cache_key_buffer));
       cache_handle = block_cache->Lookup(key);
       if (cache_handle != nullptr) {
+        // 找到直接取值
         block = reinterpret_cast<Block*>(block_cache->Value(cache_handle));
       } else {
         s = ReadBlock(table->rep_->file, options, handle, &contents);

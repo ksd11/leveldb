@@ -37,8 +37,8 @@ class BloomFilterPolicy : public FilterPolicy {
     bits = bytes * 8;
 
     const size_t init_size = dst->size();
-    dst->resize(init_size + bytes, 0);
-    dst->push_back(static_cast<char>(k_));  // Remember # of probes in filter
+    dst->resize(init_size + bytes, 0); // 将布隆过滤器追加到dst后
+    dst->push_back(static_cast<char>(k_));  // Remember # of probes in filter 记录哈希函数的个数
     char* array = &(*dst)[init_size];
     for (int i = 0; i < n; i++) {
       // Use double-hashing to generate a sequence of hash values.

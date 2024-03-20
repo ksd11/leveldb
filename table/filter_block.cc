@@ -18,6 +18,7 @@ static const size_t kFilterBase = 1 << kFilterBaseLg;
 FilterBlockBuilder::FilterBlockBuilder(const FilterPolicy* policy)
     : policy_(policy) {}
 
+// 开始构建新的filter block，TableBuilder在构造函数和Flush中调用
 void FilterBlockBuilder::StartBlock(uint64_t block_offset) {
   uint64_t filter_index = (block_offset / kFilterBase);
   assert(filter_index >= filter_offsets_.size());
@@ -26,12 +27,14 @@ void FilterBlockBuilder::StartBlock(uint64_t block_offset) {
   }
 }
 
+// 加key，TableBuilder每次向data block中加入key时调用
 void FilterBlockBuilder::AddKey(const Slice& key) {
   Slice k = key;
   start_.push_back(keys_.size());
   keys_.append(k.data(), k.size());
 }
 
+// 结束构建，TableBuilder在结束对table的构建时调用
 Slice FilterBlockBuilder::Finish() {
   if (!start_.empty()) {
     GenerateFilter();
@@ -49,6 +52,8 @@ Slice FilterBlockBuilder::Finish() {
 }
 
 void FilterBlockBuilder::GenerateFilter() {
+
+  // 初始的start block，不用管，直接返回
   const size_t num_keys = start_.size();
   if (num_keys == 0) {
     // Fast path if there are no keys for this filter
@@ -56,6 +61,7 @@ void FilterBlockBuilder::GenerateFilter() {
     return;
   }
 
+  // 获得之前添加的所有key，并拆分去后面做createFilter计算
   // Make list of keys from flattened key structure
   start_.push_back(keys_.size());  // Simplify length computation
   tmp_keys_.resize(num_keys);
@@ -80,14 +86,19 @@ FilterBlockReader::FilterBlockReader(const FilterPolicy* policy,
   size_t n = contents.size();
   if (n < 5) return;  // 1 byte for base_lg_ and 4 for start of offset array
   base_lg_ = contents[n - 1];
+
+  // 获取偏移数组
   uint32_t last_word = DecodeFixed32(contents.data() + n - 5);
   if (last_word > n - 5) return;
   data_ = contents.data();
   offset_ = data_ + last_word;
+  // 获取总共有多少个filter 
   num_ = (n - 5 - last_word) / 4;
 }
 
 bool FilterBlockReader::KeyMayMatch(uint64_t block_offset, const Slice& key) {
+  // 解析出filter的range，默认 2KB-1 -> 0
+  //                         2KB -> 1
   uint64_t index = block_offset >> base_lg_;
   if (index < num_) {
     uint32_t start = DecodeFixed32(offset_ + index * 4);

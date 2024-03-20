@@ -66,6 +66,7 @@ Status Footer::DecodeFrom(Slice* input) {
   return result;
 }
 
+// 根据blockhandle指定的偏移，大小信息读取file内容到block coneten
 Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
                  const BlockHandle& handle, BlockContents* result) {
   result->data = Slice();
@@ -75,7 +76,7 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
   // Read the block contents as well as the type/crc footer.
   // See table_builder.cc for the code that built this structure.
   size_t n = static_cast<size_t>(handle.size());
-  char* buf = new char[n + kBlockTrailerSize];
+  char* buf = new char[n + kBlockTrailerSize]; // block总大小，加上 1B type 和 4B CRC
   Slice contents;
   Status s = file->Read(handle.offset(), n + kBlockTrailerSize, &contents, buf);
   if (!s.ok()) {
@@ -99,6 +100,7 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
     }
   }
 
+  // data[n]指向的是block的类型(压缩方式)
   switch (data[n]) {
     case kNoCompression:
       if (data != buf) {

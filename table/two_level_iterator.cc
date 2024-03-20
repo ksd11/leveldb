@@ -112,6 +112,7 @@ void TwoLevelIterator::Prev() {
   SkipEmptyDataBlocksBackward();
 }
 
+// 前进找有效的datablock
 void TwoLevelIterator::SkipEmptyDataBlocksForward() {
   while (data_iter_.iter() == nullptr || !data_iter_.Valid()) {
     // Move to next block
@@ -125,6 +126,7 @@ void TwoLevelIterator::SkipEmptyDataBlocksForward() {
   }
 }
 
+// 后退找有效的dataBlock
 void TwoLevelIterator::SkipEmptyDataBlocksBackward() {
   while (data_iter_.iter() == nullptr || !data_iter_.Valid()) {
     // Move to next block
@@ -143,6 +145,7 @@ void TwoLevelIterator::SetDataIterator(Iterator* data_iter) {
   data_iter_.Set(data_iter);
 }
 
+// 设置data_iter
 void TwoLevelIterator::InitDataBlock() {
   if (!index_iter_.Valid()) {
     SetDataIterator(nullptr);

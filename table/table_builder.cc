@@ -32,17 +32,18 @@ struct TableBuilder::Rep {
                          ? nullptr
                          : new FilterBlockBuilder(opt.filter_policy)),
         pending_index_entry(false) {
+    // index block没有重启点，或者说只有一个重启点
     index_block_options.block_restart_interval = 1;
   }
 
-  Options options;
-  Options index_block_options;
-  WritableFile* file;
-  uint64_t offset;
-  Status status;
-  BlockBuilder data_block;
-  BlockBuilder index_block;
-  std::string last_key;
+  Options options; // data block的选项
+  Options index_block_options; // index block的选项
+  WritableFile* file; // sstable文件
+  uint64_t offset; // 要写入data block在sstable文件中的偏移
+  Status status; // 当前状态-初始ok
+  BlockBuilder data_block; // 当前操作的data block
+  BlockBuilder index_block; // sstable 的Index block
+  std::string last_key; // 当前data block最后的k/v对的Key
   int64_t num_entries;
   bool closed;  // Either Finish() or Abandon() has been called.
   FilterBlockBuilder* filter_block;
@@ -64,6 +65,7 @@ struct TableBuilder::Rep {
 
 TableBuilder::TableBuilder(const Options& options, WritableFile* file)
     : rep_(new Rep(options, file)) {
+  // 初始filter block
   if (rep_->filter_block != nullptr) {
     rep_->filter_block->StartBlock(0);
   }
@@ -99,15 +101,20 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
     assert(r->options.comparator->Compare(key, Slice(r->last_key)) > 0);
   }
 
+  // pending_index_entry 为true只有data block是空的
   if (r->pending_index_entry) {
     assert(r->data_block.empty());
+    // 压缩key
     r->options.comparator->FindShortestSeparator(&r->last_key, key);
+    
+    // 记录上个block的偏移，大小信息，并添加到index_block
     std::string handle_encoding;
     r->pending_handle.EncodeTo(&handle_encoding);
     r->index_block.Add(r->last_key, Slice(handle_encoding));
     r->pending_index_entry = false;
   }
 
+  // 添加filter block
   if (r->filter_block != nullptr) {
     r->filter_block->AddKey(key);
   }

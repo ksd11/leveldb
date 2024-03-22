@@ -351,7 +351,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   versions_->AddLiveFiles(&expected);
   uint64_t number;
   FileType type;
-  std::vector<uint64_t> logs;
+  std::vector<uint64_t> logs; // 保存所有没持久化的log
   for (size_t i = 0; i < filenames.size(); i++) {
     if (ParseFileName(filenames[i], &number, &type)) {
       expected.erase(number);
@@ -359,7 +359,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
         logs.push_back(number);
     }
   }
-  if (!expected.empty()) {
+  if (!expected.empty()) { // 缺少sstable文件
     char buf[50];
     std::snprintf(buf, sizeof(buf), "%d missing files; e.g.",
                   static_cast<int>(expected.size()));
@@ -388,6 +388,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   return Status::OK();
 }
 
+// 从logfile中恢复，可能有由于memtable未compaction时，系统崩溃
 Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
                               bool* save_manifest, VersionEdit* edit,
                               SequenceNumber* max_sequence) {
@@ -1509,12 +1510,15 @@ Open -> Recover
 Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
   *dbptr = nullptr;
 
+  // 1. 创建DBImpl对象，并根据Manifest恢复 
   DBImpl* impl = new DBImpl(options, dbname);
   impl->mutex_.Lock(); // 恢复时持锁
   VersionEdit edit;
   // Recover handles create_if_missing, error_if_exists
   bool save_manifest = false;
   Status s = impl->Recover(&edit, &save_manifest);
+
+  // 2. 创建新的log文件
   if (s.ok() && impl->mem_ == nullptr) {
     // Create new log and a corresponding memtable.
     uint64_t new_log_number = impl->versions_->NewFileNumber();
@@ -1530,11 +1534,15 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
       impl->mem_->Ref();
     }
   }
+  
+  // 3. 调用logAndApply，根据edit记录的增量变动生成新的current version，并写入Manifest, CURRENT
   if (s.ok() && save_manifest) {
     edit.SetPrevLogNumber(0);  // No older logs needed after recovery.
     edit.SetLogNumber(impl->logfile_number_);
     s = impl->versions_->LogAndApply(&edit, &impl->mutex_);
   }
+
+  // 4. 删除过期的文件，并检查是否需要进行compaction
   if (s.ok()) {
     impl->RemoveObsoleteFiles();
     impl->MaybeScheduleCompaction();

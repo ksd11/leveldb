@@ -618,7 +618,7 @@ class VersionSet::Builder {
   typedef std::set<FileMetaData*, BySmallestKey> FileSet;
   // 记录添加和删除的文件
   struct LevelState {
-    std::set<uint64_t> deleted_files;
+    std::set<uint64_t> deleted_files; // 保存删除的文件号
     FileSet* added_files;
   };
 
@@ -902,6 +902,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
 }
 
 // 被DBImpl::recover调用，读取manifest文件然后恢复数据库状态
+// 如果调用成功则设置VersionEdit
 Status VersionSet::Recover(bool* save_manifest) {
 
   // 此logReporter的作用是忽略corruption?
@@ -972,7 +973,7 @@ Status VersionSet::Recover(bool* save_manifest) {
       }
 
       if (edit.has_log_number_) {
-        log_number = edit.log_number_;
+        log_number = edit.log_number_; // 当前的log的number
         have_log_number = true;
       }
 
@@ -1200,6 +1201,13 @@ uint64_t VersionSet::ApproximateOffsetOf(Version* v, const InternalKey& ikey) {
   return result;
 }
 
+/*
+把version set包含的所有file添加
+version set
+  -> version
+    -> level
+      -> file
+*/
 void VersionSet::AddLiveFiles(std::set<uint64_t>* live) {
   for (Version* v = dummy_versions_.next_; v != &dummy_versions_;
        v = v->next_) {

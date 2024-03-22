@@ -89,8 +89,8 @@ class VersionEdit {
 
   std::string comparator_; // key comaprator名字
   uint64_t log_number_; // 日志编号
-  uint64_t prev_log_number_; // 前一个日志编号
-  uint64_t next_file_number_; // 下一个文件编号
+  uint64_t prev_log_number_; // 前一个日志编号 log
+  uint64_t next_file_number_; // 下一个文件编号 sstable
   SequenceNumber last_sequence_; // 上一个seq
   bool has_comparator_; // 是否有comparator
   bool has_log_number_; // 是否有log number

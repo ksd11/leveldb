@@ -286,6 +286,7 @@ class Block::Iter : public Iterator {
   }
 };
 
+// 遍历一个block
 Iterator* Block::NewIterator(const Comparator* comparator) {
   if (size_ < sizeof(uint32_t)) {
     return NewErrorIterator(Status::Corruption("bad block contents"));

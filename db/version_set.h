@@ -151,16 +151,16 @@ class Version {
   int refs_;          // Number of live refs to this version
 
   // List of files per level
-  std::vector<FileMetaData*> files_[config::kNumLevels];
+  std::vector<FileMetaData*> files_[config::kNumLevels]; // sstable文件列表, 每个level都有一个文件列表，如files_[0]代表level0所有文件
 
   // Next file to compact based on seek stats.
-  FileMetaData* file_to_compact_;
+  FileMetaData* file_to_compact_; // 下一个要compact的文件
   int file_to_compact_level_;
 
   // Level that should be compacted next and its compaction score.
   // Score < 1 means compaction is not strictly needed.  These fields
   // are initialized by Finalize().
-  double compaction_score_;
+  double compaction_score_; // 下一个应该comapct的level和compaction分数
   int compaction_level_;
 };
 
@@ -298,15 +298,19 @@ class VersionSet {
   const Options* const options_;
   TableCache* const table_cache_;
   const InternalKeyComparator icmp_;
-  uint64_t next_file_number_;
-  uint64_t manifest_file_number_;
+
+  // db原信息相关
+  uint64_t next_file_number_; // log 文件编号
+  uint64_t manifest_file_number_; // manifest文件编号
   uint64_t last_sequence_;
-  uint64_t log_number_;
+  uint64_t log_number_; // log 编号
   uint64_t prev_log_number_;  // 0 or backing store for memtable being compacted
 
-  // Opened lazily
+  // Opened lazily menifest文件相关
   WritableFile* descriptor_file_;
   log::Writer* descriptor_log_;
+
+  // 版本管理
   Version dummy_versions_;  // Head of circular doubly-linked list of versions.
   Version* current_;        // == dummy_versions_.prev_
 

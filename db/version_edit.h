@@ -15,6 +15,7 @@ namespace leveldb {
 
 class VersionSet;
 
+// 每个文件都拥有一个，保存了文件的元数据信息：最大key,最小key...
 struct FileMetaData {
   FileMetaData() : refs(0), allowed_seeks(1 << 30), file_size(0) {}
 
@@ -57,6 +58,7 @@ class VersionEdit {
     compact_pointers_.push_back(std::make_pair(level, key));
   }
 
+  // 添加sstable文件信息，要求：DB元信息还没写入磁盘Manifest文件
   // Add the specified file at the specified number.
   // REQUIRES: This version has not been saved (see VersionSet::SaveTo)
   // REQUIRES: "smallest" and "largest" are smallest and largest keys in file
@@ -85,14 +87,14 @@ class VersionEdit {
 
   typedef std::set<std::pair<int, uint64_t>> DeletedFileSet;
 
-  std::string comparator_;
-  uint64_t log_number_;
-  uint64_t prev_log_number_;
-  uint64_t next_file_number_;
-  SequenceNumber last_sequence_;
-  bool has_comparator_;
-  bool has_log_number_;
-  bool has_prev_log_number_;
+  std::string comparator_; // key comaprator名字
+  uint64_t log_number_; // 日志编号
+  uint64_t prev_log_number_; // 前一个日志编号
+  uint64_t next_file_number_; // 下一个文件编号
+  SequenceNumber last_sequence_; // 上一个seq
+  bool has_comparator_; // 是否有comparator
+  bool has_log_number_; // 是否有log number
+  bool has_prev_log_number_; // 是否有pre_log_number
   bool has_next_file_number_;
   bool has_last_sequence_;
 

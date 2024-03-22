@@ -61,7 +61,7 @@ class TwoLevelIterator : public Iterator {
   void* arg_;
   const ReadOptions options_;
   Status status_;
-  IteratorWrapper index_iter_;
+  IteratorWrapper index_iter_; // 每个index指向一个block
   IteratorWrapper data_iter_;  // May be nullptr
   // If data_iter_ is non-null, then "data_block_handle_" holds the
   // "index_value" passed to block_function_ to create the data_iter_.
@@ -145,7 +145,7 @@ void TwoLevelIterator::SetDataIterator(Iterator* data_iter) {
   data_iter_.Set(data_iter);
 }
 
-// 设置data_iter
+// 根据index_iter设置data_iter
 void TwoLevelIterator::InitDataBlock() {
   if (!index_iter_.Valid()) {
     SetDataIterator(nullptr);
@@ -165,6 +165,7 @@ void TwoLevelIterator::InitDataBlock() {
 
 }  // namespace
 
+// 对TwoLevelIterator的包装
 Iterator* NewTwoLevelIterator(Iterator* index_iter,
                               BlockFunction block_function, void* arg,
                               const ReadOptions& options) {

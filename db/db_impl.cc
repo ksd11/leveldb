@@ -178,6 +178,7 @@ DBImpl::~DBImpl() {
   }
 }
 
+// 在DBImpl::Revocer被调用，创建一个新的DB
 Status DBImpl::NewDB() {
   VersionEdit new_db;
   new_db.SetComparatorName(user_comparator()->Name());
@@ -194,8 +195,8 @@ Status DBImpl::NewDB() {
   {
     log::Writer log(file);
     std::string record;
-    new_db.EncodeTo(&record);
-    s = log.AddRecord(record);
+    new_db.EncodeTo(&record); 
+    s = log.AddRecord(record); // 将第一个VersionEdit写入
     if (s.ok()) {
       s = file->Sync();
     }
@@ -289,6 +290,10 @@ void DBImpl::RemoveObsoleteFiles() {
   mutex_.Lock();
 }
 
+/* 
+根据current指向的Manfest的内容恢复数据库状态
+Manfest是一个Log文件，每个log是一个VersionEdit
+*/
 Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   mutex_.AssertHeld();
 
@@ -297,16 +302,17 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   // may already exist from a previous failed creation attempt.
   env_->CreateDir(dbname_);
   assert(db_lock_ == nullptr);
-  Status s = env_->LockFile(LockFileName(dbname_), &db_lock_);
+  Status s = env_->LockFile(LockFileName(dbname_), &db_lock_); // 数据库只能被一个进程使用
   if (!s.ok()) {
     return s;
   }
 
+  // 判断current文件是否存在
   if (!env_->FileExists(CurrentFileName(dbname_))) {
     if (options_.create_if_missing) {
       Log(options_.info_log, "Creating DB %s since it was missing.",
           dbname_.c_str());
-      s = NewDB();
+      s = NewDB(); // 不存在则创建一个全新的db
       if (!s.ok()) {
         return s;
       }
@@ -321,7 +327,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
     }
   }
 
-  s = versions_->Recover(save_manifest);
+  s = versions_->Recover(save_manifest); // 调用version_set的revocer恢复
   if (!s.ok()) {
     return s;
   }
@@ -1494,11 +1500,17 @@ Status DB::Delete(const WriteOptions& opt, const Slice& key) {
 
 DB::~DB() = default;
 
+/*
+打开数据库
+
+Open -> Recover
+
+*/
 Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
   *dbptr = nullptr;
 
   DBImpl* impl = new DBImpl(options, dbname);
-  impl->mutex_.Lock();
+  impl->mutex_.Lock(); // 恢复时持锁
   VersionEdit edit;
   // Recover handles create_if_missing, error_if_exists
   bool save_manifest = false;
@@ -1527,7 +1539,7 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
     impl->RemoveObsoleteFiles();
     impl->MaybeScheduleCompaction();
   }
-  impl->mutex_.Unlock();
+  impl->mutex_.Unlock(); // 结束时释放，此时数据库状态正常
   if (s.ok()) {
     assert(impl->mem_ != nullptr);
     *dbptr = impl;
